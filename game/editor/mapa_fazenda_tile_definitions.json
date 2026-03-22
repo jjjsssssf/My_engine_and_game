@@ -1,0 +1,337 @@
+{
+  "_versao": "1.0",
+  "tiles": [
+    {
+      "id": 0,
+      "nome": "terra",
+      "nomes": [
+        "terra",
+        "folha"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 0,
+      "lin": 2,
+      "solid": false,
+      "fundo": null,
+      "acao": "",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": [
+        {
+          "sprite": "casa.png",
+          "col": 1,
+          "lin": 2,
+          "nome": "folha"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "nome": "mato",
+      "nomes": [
+        "mato",
+        "pedra"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 3,
+      "lin": 0,
+      "solid": true,
+      "fundo": null,
+      "acao": "",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": [
+        {
+          "sprite": "casa.png",
+          "col": 4,
+          "lin": 0,
+          "nome": "pedra"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nome": "lago",
+      "nomes": [
+        "lago"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 4,
+      "lin": 3,
+      "solid": true,
+      "fundo": null,
+      "acao": "tile_lago",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": []
+    },
+    {
+      "id": 3,
+      "nome": "arvore",
+      "nomes": [
+        "arvore"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 2,
+      "lin": 0,
+      "solid": true,
+      "fundo": null,
+      "acao": "",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": [
+        {
+          "sprite": "casa.png",
+          "col": 2,
+          "lin": 1,
+          "nome": "arvore"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "nome": "p",
+      "nomes": [
+        "p"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 5,
+      "lin": 4,
+      "solid": false,
+      "fundo": null,
+      "acao": "",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": [
+        {
+          "sprite": "casa.png",
+          "col": 6,
+          "lin": 4,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 7,
+          "lin": 4,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 7,
+          "lin": 5,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 7,
+          "lin": 6,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 6,
+          "lin": 6,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 5,
+          "lin": 6,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 5,
+          "lin": 5,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 5,
+          "lin": 7,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 6,
+          "lin": 7,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 7,
+          "lin": 7,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 0,
+          "lin": 0,
+          "nome": "p"
+        },
+        {
+          "sprite": "casa.png",
+          "col": 1,
+          "lin": 0,
+          "nome": "p"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "nome": "porta",
+      "nomes": [
+        "porta"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 1,
+      "lin": 1,
+      "solid": true,
+      "fundo": null,
+      "acao": "",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": []
+    },
+    {
+      "id": 6,
+      "nome": "bau0",
+      "nomes": [
+        "bau0",
+        "bau1"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 2,
+      "lin": 3,
+      "solid": false,
+      "fundo": null,
+      "acao": "",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": [
+        {
+          "sprite": "casa.png",
+          "col": 3,
+          "lin": 3,
+          "nome": "bau1"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "nome": "terra_arada",
+      "nomes": [
+        "terra_arada",
+        "terra_molhada"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 0,
+      "lin": 3,
+      "solid": false,
+      "fundo": null,
+      "acao": "",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": [
+        {
+          "sprite": "casa.png",
+          "col": 1,
+          "lin": 3,
+          "nome": "terra_molhada"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "nome": "cama",
+      "nomes": [
+        "cama"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 4,
+      "lin": 2,
+      "solid": true,
+      "fundo": null,
+      "acao": "cama",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "",
+      "loja_tipos": "",
+      "variantes": []
+    },
+    {
+      "id": 9,
+      "nome": "loja",
+      "nomes": [
+        "loja"
+      ],
+      "planta": false,
+      "sprite": "casa.png",
+      "col": 4,
+      "lin": 1,
+      "solid": true,
+      "fundo": null,
+      "acao": "loja",
+      "mensagem": "",
+      "destino": "",
+      "tipo_trocar": "porta",
+      "spawn_x": null,
+      "spawn_y": null,
+      "loja_nomes": "Semente,Fertilizante",
+      "loja_tipos": "",
+      "variantes": []
+    }
+  ]
+}

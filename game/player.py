@@ -52,10 +52,6 @@ class Player:
         self.mana_max = 100
         self.mana = self.mana_max
         self.nivel = 1
-        self.nivel_pesca = 5
-        self.nivel_pescaria = 5
-        self.nivel_pantil = 1
-        self.nivel_coleta = 1
         self.pontos = 0
         self.gold = 350
         self.xp_max = 100
@@ -66,11 +62,9 @@ class Player:
         self.caixa_vendas = {}
         self.dias_sem_chuva = 0
         self.proxima_chuva_em = random.randint(5, 10)
-        self.char = "@"
-        self.color = ""
         self.mapa_atual = ""
-        self.magias_conhecidas = ["Dança das Espadas"]
         self.invetario = {}
+        self.espacos_inventario = 24
         self.hotbar = {i: None for i in range(1, 10)}
         self.item_selecionado = 1
         self.amizades = {}
@@ -85,6 +79,33 @@ class Player:
 
         self.dia_atual = 1
         self.estacao_atual = "Primavera"
+
+        # ── Sistema de Habilidades e XP ──────────────────────────────────────
+        # XP geral — ao chegar em xp_por_ponto o jogador pode distribuir 1 ponto
+        self.xp_hab         = 0        # XP acumulado no ciclo atual
+        self.xp_total       = 0        # XP total acumulado na vida inteira
+        self.pontos_hab     = 0        # Pontos prontos para distribuir
+        # XP necessário para o PRÓXIMO ponto — dobra a cada level up
+        self.xp_por_ponto   = 100      # começa em 100, vai: 100→200→400→800...
+
+        # Níveis por habilidade (1–10)
+        self.hab_coleta  = 1
+        self.hab_cultivo = 1
+        self.hab_pesca   = 1
+        self.hab_social  = 1
+
+        # XP acumulado dentro de cada habilidade (para mostrar barra individual)
+        self.xp_coleta   = 0
+        self.xp_cultivo  = 0
+        self.xp_pesca    = 0
+        self.xp_social   = 0
+
+        # Referência aos NPCs para colisão — injetada por game.py via set_npcs_ref()
+        self._todos_npcs = None
+
+    def set_npcs_ref(self, todos_npcs):
+        """Injeta a referência ao dict de NPCs para colisão bidirecional."""
+        self._todos_npcs = todos_npcs
 
     def dormir(self, mapas_mundo):
         """Avança o tempo e processa o mundo."""
@@ -159,90 +180,120 @@ class Player:
                     self.frame_atual = 0
                     self.atualizar_sprite()
 
-    def _deslizar_para_destino(self):
-        # Move em X
-        if self.pixel_x < self.destino_x:
-            self.pixel_x += self.velocidade
-        elif self.pixel_x > self.destino_x:
-            self.pixel_x -= self.velocidade
-            
-        # Move em Y
-        if self.pixel_y < self.destino_y:
-            self.pixel_y += self.velocidade
-        elif self.pixel_y > self.destino_y:
-            self.pixel_y -= self.velocidade
-            
-        # Se chegou exatamente no destino, avisa que parou
+    # ─────────────────────────────────────────────────────────────────────────
+    # COLISÃO  —  simples, tile inteiro, estilo GBC
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _tile_solido(self, mapa_dict, gx, gy):
+        """Retorna True se qualquer camada tem um tile sólido em (gx, gy)."""
+        arte = mapa_dict.get("arte", [])
+        rows = len(arte)
+        cols = len(arte[0]) if rows > 0 else 0
+
+        if not (0 <= gx < cols and 0 <= gy < rows):
+            return True  # fora do mapa = parede sólida
+
+        blocos = mapa_dict["blocos"]
+        for layer_key in ("chao", "arte", "topo"):
+            grade = mapa_dict.get(layer_key, [])
+            if not grade or gy >= len(grade) or gx >= len(grade[gy]):
+                continue
+            vid = grade[gy][gx]
+            if vid and blocos.get(vid, {}).get("solid", False):
+                return True
+        return False
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # MOVIMENTAÇÃO
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _deslizar_para_destino(self, mapa_dict):
+        ts = self.tile_size
+
+        # ── Move em X ────────────────────────────────────────────────────────
+        if self.pixel_x != self.destino_x:
+            if self.pixel_x < self.destino_x:
+                self.pixel_x = min(self.pixel_x + self.velocidade, self.destino_x)
+            else:
+                self.pixel_x = max(self.pixel_x - self.velocidade, self.destino_x)
+
+        # ── Move em Y ────────────────────────────────────────────────────────
+        if self.pixel_y != self.destino_y:
+            if self.pixel_y < self.destino_y:
+                self.pixel_y = min(self.pixel_y + self.velocidade, self.destino_y)
+            else:
+                self.pixel_y = max(self.pixel_y - self.velocidade, self.destino_y)
+
+        # ── Chegou ao destino ─────────────────────────────────────────────────
         if self.pixel_x == self.destino_x and self.pixel_y == self.destino_y:
             self.movendo = False
-            # Atualiza o grid_x e grid_y oficial
-            self.grid_x = int(self.pixel_x // self.tile_size)
-            self.grid_y = int(self.pixel_y // self.tile_size)
+            self.grid_x  = self.pixel_x // ts
+            self.grid_y  = self.pixel_y // ts
 
     def update(self, mapa_dict):
         if self.movendo:
-            self._deslizar_para_destino()
+            self._deslizar_para_destino(mapa_dict)
         else:
             self._checar_input(mapa_dict)
-
         self.animar()
 
     def _checar_input(self, mapa_dict):
         dx, dy = 0, 0
         nova_direcao = self.direcao
         v = self.engine_video
-
-        # Pega a direção baseada na tecla direto da engine (seu código de input original)
         if v.key_down(b"w") or v.key_down(b"up"):
-            dy = -1
-            nova_direcao = 'cima'
+            dy = -1;  nova_direcao = 'cima'
         elif v.key_down(b"s") or v.key_down(b"down"):
-            dy = 1
-            nova_direcao = 'baixo'
+            dy = 1;   nova_direcao = 'baixo'
         elif v.key_down(b"a") or v.key_down(b"left"):
-            dx = -1
-            nova_direcao = 'esquerda'
+            dx = -1;  nova_direcao = 'esquerda'
         elif v.key_down(b"d") or v.key_down(b"right"):
-            dx = 1
-            nova_direcao = 'direita'
+            dx = 1;   nova_direcao = 'direita'
 
         if dx != 0 or dy != 0:
             self.direcao = nova_direcao
-            futuro_grid_x = self.grid_x + dx
-            futuro_grid_y = self.grid_y + dy
-            
-            # Extrai do dicionário as matrizes e as lógicas de colisão
-            mapa_arte = mapa_dict["arte"]
-            blocos_info = mapa_dict["blocos"]
-            portais = mapa_dict.get("portais", {})
-            
-            map_rows = len(mapa_arte)
-            map_cols = len(mapa_arte[0]) if map_rows > 0 else 0
-            
+            ts = self.tile_size
+
+            futuro_x  = self.pixel_x + dx * ts
+            futuro_y  = self.pixel_y + dy * ts
+            futuro_gx = futuro_x // ts
+            futuro_gy = futuro_y // ts
+
             # Verifica limites do mapa
-            if 0 <= futuro_grid_x < map_cols and 0 <= futuro_grid_y < map_rows:
-                tile_val = mapa_arte[futuro_grid_y][futuro_grid_x]
-                
-                # Se o bloco não existir no dict, definimos `solid: True` por segurança para evitar bugs
-                info_do_bloco = blocos_info.get(tile_val, {"solid": True})
-                
-                # --- SISTEMA DE COLISÃO ---
-                # Se NÃO for sólido, o jogador pode andar
-                if not info_do_bloco["solid"]:
-                    self.movendo = True
-                    self.destino_x = futuro_grid_x * self.tile_size
-                    self.destino_y = futuro_grid_y * self.tile_size
-                    
-                    # --- SISTEMA DE PORTAIS ---
-                    if (futuro_grid_x, futuro_grid_y) in portais:
-                        portal = portais[(futuro_grid_x, futuro_grid_y)]
-                        print(f"Mudando para o mapa: {portal['destino']} em x:{portal['spawn'][0]} y:{portal['spawn'][1]}")
-                        
-                        # Altere aqui para a sua lógica de teleporte (alterar mapa ativo e reposicionar px e py)
-                        self.mapa_atual = portal['destino']
-                        self.grid_x, self.grid_y = portal['spawn']
-                        self.pixel_x = self.grid_x * self.tile_size
-                        self.pixel_y = self.grid_y * self.tile_size
+            arte     = mapa_dict.get("arte", [])
+            map_rows = len(arte)
+            map_cols = len(arte[0]) if map_rows > 0 else 0
+            if not (0 <= futuro_gx < map_cols and 0 <= futuro_gy < map_rows):
+                return
+
+            # Colisão com tile
+            if self._tile_solido(mapa_dict, futuro_gx, futuro_gy):
+                return
+
+            # Colisão com NPC
+            npcs_ref = getattr(self, '_todos_npcs', None)
+            if npcs_ref:
+                for npc in npcs_ref.values():
+                    if (getattr(npc, 'mapa_atual', None) == getattr(self, 'mapa_atual', None)
+                            and npc.x == futuro_gx and npc.y == futuro_gy):
+                        return
+
+            # Inicia deslizamento
+            self.movendo   = True
+            self.destino_x = futuro_x
+            self.destino_y = futuro_y
+
+            # Portais
+            portais = mapa_dict.get("portais", {})
+            if (futuro_gx, futuro_gy) in portais:
+                portal = portais[(futuro_gx, futuro_gy)]
+                self.mapa_atual         = portal['destino']
+                self.grid_x, self.grid_y = portal['spawn']
+                self.pixel_x  = self.grid_x * ts
+                self.pixel_y  = self.grid_y * ts
+                self.destino_x = self.pixel_x
+                self.destino_y = self.pixel_y
+                self.movendo   = False
         else:
             self.frame_atual = 1
 
@@ -260,6 +311,140 @@ class Player:
                 self.dia_semana_idx = (self.dia_semana_idx + 1) % 7
                 self.dias_na_estacao += 1
     
+    # ─────────────────────────────────────────────────────────────────────────
+    # SISTEMA DE HABILIDADES E XP
+    # ─────────────────────────────────────────────────────────────────────────
+
+    # Nível máximo de cada habilidade
+    _HAB_MAX = 10
+    # XP necessário por ciclo para ganhar 1 ponto de habilidade
+    _XP_POR_PONTO = 100
+
+    # Tabela de XP por ação — pode ser sobrescrita por item.xp_ganho
+    _XP_ACOES = {
+        "plantar":    1,
+        "colher":    15,
+        "pescar":    20,
+        "conversar":  5,
+        "presente":  10,
+    }
+
+    def ganhar_xp_hab(self, acao: str, bonus_xp: int = 0) -> dict:
+        """
+        Concede XP de habilidade por uma ação.
+        acao: 'plantar' | 'colher' | 'pescar' | 'conversar' | 'presente'
+        bonus_xp: XP extra definido no item (item.xp_ganho)
+        Retorna dict com xp_ganho, ponto_ganho (bool), mensagem.
+
+        A cada ponto ganho o limiar de XP dobra:
+          1º ponto → 100 XP  |  2º → 200  |  3º → 400  |  4º → 800 ...
+        """
+        base   = self._XP_ACOES.get(acao, 0)
+        ganho  = base + bonus_xp
+
+        if ganho <= 0:
+            return {"xp_ganho": 0, "ponto_ganho": False, "mensagem": ""}
+
+        # Garante que xp_por_ponto existe (compatibilidade com saves antigos)
+        if not hasattr(self, 'xp_por_ponto') or self.xp_por_ponto <= 0:
+            self.xp_por_ponto = 100
+
+        # Acumula XP geral
+        self.xp_hab   = getattr(self, 'xp_hab',   0) + ganho
+        self.xp_total = getattr(self, 'xp_total', 0) + ganho
+
+        # Acumula XP na habilidade específica
+        attr_xp = {"plantar": "xp_cultivo", "colher": "xp_coleta",
+                   "pescar": "xp_pesca", "conversar": "xp_social",
+                   "presente": "xp_social"}.get(acao)
+        if attr_xp:
+            setattr(self, attr_xp, getattr(self, attr_xp, 0) + ganho)
+
+        # Verifica ciclo de ponto — limiar dobra a cada level up
+        ponto_ganho = False
+        msg = f"+{ganho} XP [{acao}]"
+        while self.xp_hab >= self.xp_por_ponto:
+            self.xp_hab    -= self.xp_por_ponto
+            self.xp_por_ponto *= 2          # ← dobra o limiar
+            self.pontos_hab  = getattr(self, 'pontos_hab', 0) + 1
+            ponto_ganho      = True
+            msg += "  >>  Ponto de habilidade disponivel!"
+
+        return {"xp_ganho": ganho, "ponto_ganho": ponto_ganho, "mensagem": msg}
+
+    def distribuir_ponto(self, habilidade: str) -> str:
+        """
+        Gasta 1 ponto_hab para subir 1 nível na habilidade escolhida.
+        habilidade: 'coleta' | 'cultivo' | 'pesca' | 'social'
+        """
+        attr = f"hab_{habilidade}"
+        if not hasattr(self, attr):
+            return f"Habilidade '{habilidade}' não existe."
+        if getattr(self, 'pontos_hab', 0) <= 0:
+            return "Sem pontos disponíveis."
+        nivel_atual = getattr(self, attr, 1)
+        if nivel_atual >= self._HAB_MAX:
+            return f"{habilidade.capitalize()} já está no nível máximo ({self._HAB_MAX})!"
+        setattr(self, attr, nivel_atual + 1)
+        self.pontos_hab -= 1
+        return f"{habilidade.capitalize()} agora é nível {nivel_atual + 1}!"
+
+    def bonus_estrelas_item(self, item) -> int:
+        """
+        Sorteia as estrelas efetivas do item para ESTE jogador com base
+        no nível da habilidade correspondente.
+          Cultivo  → hab_cultivo
+          Colheita → hab_coleta
+          Peixe    → hab_pesca
+
+        Tabela de chances por nível N (1-indexado):
+          bronze  = 10 + (N-1)*5 %
+          prata   = 2.5 + (N-1)*2.5 %
+          ouro    = (N-1)*1.5 %
+          platina = max(0, (N-4)*0.9) %   (só a partir do nível 4)
+        """
+        import random as _random
+
+        tipo = getattr(item, 'tipo_presente', '')
+        mapa_hab = {
+            'Cultivo':  'hab_cultivo',
+            'Colheita': 'hab_coleta',
+            'Peixe':    'hab_pesca',
+        }
+        attr = mapa_hab.get(tipo)
+        if attr is None:
+            return getattr(item, 'estrelas', 0)
+
+        # Itens com estrelas fixas (ex: após fertilizante)
+        base = getattr(item, 'estrelas', 0)
+        if base > 0:
+            return base
+
+        nivel = getattr(self, attr, 1)
+        n = nivel - 1   # offset: nível 1 → n=0
+
+        chance_bronze  = 10.0 + n * 5.0
+        chance_prata   = 2.5  + n * 2.5
+        chance_ouro    = 0.0  + n * 1.5
+        chance_platina = max(0.0, (n - 3) * 0.9)
+
+        r = _random.uniform(0, 100)
+        if r < chance_platina:
+            return 4
+        if r < chance_ouro:
+            return 3
+        if r < chance_prata:
+            return 2
+        if r < chance_bronze:
+            return 1
+        return 0
+
+    def bonus_amizade(self) -> float:
+        """Multiplicador de pontos de amizade dado pelo nível Social."""
+        nivel = getattr(self, 'hab_social', 1)
+        return 1.0 + (nivel - 1) * 0.111   # +~11% por nível → 2× no nível 10
+
+    # mantém compatibilidade com código antigo que chama ganhar_xp(qtd)
     def ganhar_xp(self, quantidade):
         self.xp += quantidade
         level_up = False
